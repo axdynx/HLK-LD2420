@@ -1,0 +1,31 @@
+[Unit]
+Description=Service MQTT Capteur Radar
+After=network.target
+
+[Service]
+Type=simple
+User=radar
+Group=radar
+WorkingDirectory=/opt/radar_service
+ExecStart=/usr/bin/python3 /opt/radar_service/mqtt_service.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Variables d'environnement optionnelles
+Environment=PYTHONPATH=/opt/radar_service
+Environment=PORT=/dev/serial0
+Environment=MQTT_BROKER=localhost
+Environment=MQTT_PORT=1883
+Environment=MQTT_USERNAME=
+Environment=MQTT_PASSWORD=
+Environment=BAUDRATE=115200
+Environment=RESTART_INTERVAL=30
+Environment=MQTT_TOPIC=radar/$sn
+
+# Permissions pour accès port série
+SupplementaryGroups=dialout
+
+[Install]
+WantedBy=multi-user.target
