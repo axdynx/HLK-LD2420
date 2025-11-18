@@ -62,7 +62,7 @@ cp -r "$SCRIPT_DIR/commands/"* $SERVICE_DIR/commands/
 
 # Ajuster les permissions
 chown -R $SERVICE_USER:$SERVICE_USER $SERVICE_DIR
-chmod +x $SERVICE_DIR/mqtt_service.py
+chmod +x $SERVICE_DIR/main.py
 
 # Installer le fichier de service systemd
 echo "Installation du service systemd..."
@@ -102,3 +102,5 @@ echo "  * radar/sensor/measurements/distance : Distance mesurée"
 echo "  * radar/sensor/measurements/gates/{gate} : Valeurs énergétiques par porte"
 echo "  * radar/sensor/measurements/gates : Valeurs énergétiques de toutes les portes"
 echo "  * radar/sensor/measurements : Toutes les mesures"
+echo "  * radar/sensor/measurements/set/<parameter> : Changer un paramètre du radar"
+echo "  * radar/sensor/measurements/set/<parameter>/<id> : Changer un paramètre <id> du radar"

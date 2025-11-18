@@ -15,13 +15,13 @@ Ce guide explique comment utiliser le code et déployer ce service systemd sur u
     - `python3 -m venv .venv`
     - `source .venv/bin/activate`
 4. Executer le fichier d'installation :
-    - `./install_service.sh`
+    - `sudo ./install_service.sh`
 
 ## Utilisation manuelle
 ### Installer les dépendances
 - `pip3 install paho-mqtt pyserial` ou `apt-get install python3-paho-mqtt python3-serial`
 ### Tester le programme manuellement
-- `python3 mqtt_service.py <port> --mqtt-username <username> --mqtt-password <password>`
+- `python3 main.py <port> --mqtt-username <username> --mqtt-password <password>`
 S’assurer qu’il fonctionne et qu’il écrit ses logs.
 
 ## Vérifier le service et les logs
