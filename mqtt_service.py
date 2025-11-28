@@ -158,7 +158,6 @@ class RadarMQTTService:
             
         try:
             self.mqtt_client.connect(self.mqtt_broker, self.mqtt_port, 60)
-            print(f"{self.topic_parameters}/set/#")
             self.mqtt_client.message_callback_add(f"{self.topic_parameters}/set/#", on_mqtt_message_parameters_set)
             self.mqtt_client.subscribe(f"{self.topic_parameters}/set/#")
             self.mqtt_client.message_callback_add(f"{self.topic}/reboot", on_mqtt_message_reboot)
