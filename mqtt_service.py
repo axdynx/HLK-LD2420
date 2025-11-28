@@ -18,7 +18,7 @@ from commands.protocol import *
 import math
 
 class RadarMQTTService:
-    def __init__(self, serial_port, baudrate=115200, mqtt_broker="localhost", mqtt_port=1883, mqtt_username=None, mqtt_password=None, mqtt_topic="radar/$sn", restart_interval=30):
+    def __init__(self, serial_port, baudrate=115200, mqtt_broker="localhost", mqtt_port=1883, mqtt_username=None, mqtt_password=None, mqtt_topic="radar/$sn", restart_interval=30, mqtt_secure=False):
         self.serial_port = serial_port
         self.baudrate = baudrate
         self.mqtt_broker = mqtt_broker
@@ -32,13 +32,14 @@ class RadarMQTTService:
         self.version = "unknown"
         self.sn = "unknown"
         self.port_name = serial_port.replace('/dev/', '').replace('\\', '_').replace(':', '_')
+        self.mqtt_secure = mqtt_secure
         
         # Configuration série
         if not self.setup_serial():
             print("Échec connexion série")
         self.get_version()
         self.get_sn()
-        
+
         self.topic = mqtt_topic.replace("$port", self.port_name).replace("$sn", self.sn).replace("$version", self.version)
         print(f"Utilisation topic MQTT de base: {self.topic}")
         self.topic_measurements = f"{self.topic}/measurements"
@@ -55,6 +56,9 @@ class RadarMQTTService:
     def setup_mqtt(self):
         """Configure la connexion MQTT"""
         self.mqtt_client = mqtt.Client()
+
+        if (self.mqtt_secure):
+            self.mqtt_client.tls_set()
         
         def on_mqtt_connect(client, userdata, connect_flags, reason_code):
             """Callback connexion MQTT"""

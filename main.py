@@ -20,6 +20,7 @@ def main():
     parser.add_argument('--mqtt-password', help='Mot de passe MQTT (optionnel)')
     parser.add_argument('--restart-interval', type=int, default=30, help='Intervalle de redémarrage auto en secondes (défaut: 30)')
     parser.add_argument('--mqtt-topic', default='radar/$sn', help='Topic MQTT (défaut: radar/$sn)')
+    parser.add_argument('--mqtt-secure', type=bool, default=False, help='Mode MQTT/MQTTS')
     
     args = parser.parse_args()
     
@@ -37,7 +38,8 @@ def main():
         mqtt_username=args.mqtt_username,
         mqtt_password=args.mqtt_password,
         restart_interval=args.restart_interval,
-        mqtt_topic=args.mqtt_topic
+        mqtt_topic=args.mqtt_topic,
+	mqtt_secure=args.mqtt_secure
     )
     
     success = service.run()
