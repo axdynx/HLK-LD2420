@@ -1,208 +1,208 @@
 # MQTT Topics Documentation
 
-Ce document décrit tous les topics MQTT utilisés par le service radar HLK-LD2420.
+This document describes all MQTT topics used by the HLK-LD2420 radar service.
 
-## Structure générale des topics
+## General Topic Structure
 
-Le service utilise un topic de base configurable via le paramètre `--mqtt-topic` avec les variables suivantes :
-- `$port` : Nom du port série (ex: `serial0`, `COM3`)  
-- `$sn` : Numéro de série du module radar
-- `$version` : Version du firmware du module
+The service uses a configurable base topic via the `--mqtt-topic` parameter with the following variables:
+- `$port`: Serial port name (e.g., `serial0`, `COM3`)  
+- `$sn`: Radar module serial number
+- `$version`: Module firmware version
 
-**Topic de base par défaut :** `radar/$sn`
+**Default base topic:** `radar/$sn`
 
-## Topics de publication (envoyés par le service)
+## Published Topics (sent by the service)
 
-### 1. Status du service - `radar/{sn}/status`
-**Type :** Retain = True  
-**Fréquence :** Au démarrage et lors de changements d'état
+### 1. Service Status - `radar/{sn}/status`
+**Type:** Retain = True  
+**Frequency:** At startup and on status changes
 
 ```json
 {
-  "status": true,              // boolean - État de la connexion série
-  "version": "v1.6.1",  // string - Version firmware du module
+  "status": true,              // boolean - Serial connection status
+  "version": "v1.6.1",  // string - Module firmware version
   "timestamp": "2025-11-18T10:30:00.123456", // string (ISO 8601)
-  "port": "/dev/serial0",      // string - Port série utilisé
-  "serial_number": "331861989698133498920968" // string - Numéro de série du module
+  "port": "/dev/serial0",      // string - Serial port used
+  "serial_number": "331861989698133498920968" // string - Module serial number
 }
 ```
 
-### 2. Détection simple - `radar/{sn}/measurements/detection`
-**Type :** Retain = True  
-**Fréquence :** À chaque trame radar reçue
+### 2. Simple Detection - `radar/{sn}/measurements/detection`
+**Type:** Retain = True  
+**Frequency:** Every received radar frame
 
 ```json
 {
-  "detected": true,            // boolean - Présence détectée ou non
+  "detected": true,            // boolean - Presence detected or not
   "timestamp": "2025-11-18T10:30:00.123456" // string (ISO 8601)
 }
 ```
 
-### 3. Distance de détection - `radar/{sn}/measurements/distance`
-**Type :** Retain = True  
-**Fréquence :** À chaque trame radar reçue
+### 3. Detection Distance - `radar/{sn}/measurements/distance`
+**Type:** Retain = True  
+**Frequency:** Every received radar frame
 
 ```json
 {
-  "distance_cm": 245,          // number - Distance en centimètres
+  "distance_cm": 245,          // number - Distance in centimeters
   "timestamp": "2025-11-18T10:30:00.123456" // string (ISO 8601)
 }
 ```
 
-### 4. Mesures complètes - `radar/{sn}/measurements`
-**Type :** Retain = False  
-**Fréquence :** À chaque trame radar reçue
+### 4. Complete Measurements - `radar/{sn}/measurements`
+**Type:** Retain = False  
+**Frequency:** Every received radar frame
 
 ```json
 {
-  "gates": [                   // array - Mesures des 16 portes de distance
+  "gates": [                   // array - Measurements of 16 distance gates
     {
-      "gate": 0,               // number (0-15) - Numéro de la porte
-      "energy_db": 45.32,      // number - Énergie en décibels
-      "energy_raw": 34021      // number - Valeur brute d'énergie
+      "gate": 0,               // number (0-15) - Gate number
+      "energy_db": 45.32,      // number - Energy in decibels
+      "energy_raw": 34021      // number - Raw energy value
     },
-    // ... 15 autres portes
+    // ... 15 other gates
   ],
-  "detection": true,           // boolean - État de détection global
-  "distance_cm": 245,          // number - Distance en centimètres
+  "detection": true,           // boolean - Global detection status
+  "distance_cm": 245,          // number - Distance in centimeters
   "timestamp": "2025-11-18T10:30:00.123456" // string (ISO 8601)
 }
 ```
 
-### 5. Mesures par porte - `radar/{sn}/measurements/gates`
-**Type :** Retain = False  
-**Fréquence :** À chaque trame radar reçue
+### 5. Measurements by Gate - `radar/{sn}/measurements/gates`
+**Type:** Retain = False  
+**Frequency:** Every received radar frame
 
 ```json
 [
   {
-    "gate": 0,                 // number (0-15) - Numéro de la porte
-    "energy_db": 45.32,        // number - Énergie en décibels
-    "energy_raw": 34021        // number - Valeur brute d'énergie
+    "gate": 0,                 // number (0-15) - Gate number
+    "energy_db": 45.32,        // number - Energy in decibels
+    "energy_raw": 34021        // number - Raw energy value
   },
-  // ... 15 autres portes
+  // ... 15 other gates
 ]
 ```
 
-### 6. Mesure individuelle par porte - `radar/{sn}/measurements/gates/{0-15}`
-**Type :** Retain = False  
-**Fréquence :** À chaque trame radar reçue
+### 6. Individual Gate Measurement - `radar/{sn}/measurements/gates/{0-15}`
+**Type:** Retain = False  
+**Frequency:** Every received radar frame
 
 ```json
 {
-  "energy_db": 45.32,          // number - Énergie en décibels
-  "energy_raw": 34021,         // number - Valeur brute d'énergie
+  "energy_db": 45.32,          // number - Energy in decibels
+  "energy_raw": 34021,         // number - Raw energy value
   "timestamp": "2025-11-18T10:30:00.123456" // string (ISO 8601)
 }
 ```
 
-### 7. Résumé des paramètres - `radar/{sn}/parameters`
-**Type :** Retain = True  
-**Fréquence :** Au démarrage, après lecture des paramètres
+### 7. Parameters Summary - `radar/{sn}/parameters`
+**Type:** Retain = True  
+**Frequency:** At startup, after reading parameters
 
 ```json
 {
-  "total_parameters": 35,      // number - Nombre total de paramètres
-  "published_count": 35,       // number - Nombre de paramètres publiés avec succès
+  "total_parameters": 35,      // number - Total number of parameters
+  "published_count": 35,       // number - Number of successfully published parameters
   "timestamp": "2025-11-18T10:30:00.123456", // string (ISO 8601)
-  "status": "success"          // string - "success", "partial", ou "error"
+  "status": "success"          // string - "success", "partial", or "error"
 }
 ```
 
-### 8. Paramètres de distance et délai - `radar/{sn}/parameters/{param_name}`
-**Topics :**
+### 8. Distance and Delay Parameters - `radar/{sn}/parameters/{param_name}`
+**Topics:**
 - `radar/{sn}/parameters/min_detection_door`
 - `radar/{sn}/parameters/max_detection_door` 
 - `radar/{sn}/parameters/delay_time`
 
-**Type :** Retain = True  
-**Fréquence :** Au démarrage et lors de modifications
+**Type:** Retain = True  
+**Frequency:** At startup and on modifications
 
 ```json
 {
-  "name": "Porte à distance minimale de détection", // string - Nom descriptif
-  "value": 2,                  // number (0-15 pour portes, 0-65535 pour délai)
+  "name": "Minimum detection distance door", // string - Descriptive name
+  "value": 2,                  // number (0-15 for gates, 0-65535 for delay)
   "timestamp": "2025-11-18T10:30:00.123456" // string (ISO 8601)
 }
 ```
 
-### 9. Seuils de déclenchement - `radar/{sn}/parameters/trigger_threshold/{0-15}`
-**Type :** Retain = True  
-**Fréquence :** Au démarrage et lors de modifications
+### 9. Trigger Thresholds - `radar/{sn}/parameters/trigger_threshold/{0-15}`
+**Type:** Retain = True  
+**Frequency:** At startup and on modifications
 
 ```json
 {
-  "name": "Seuil de déclenchement 5", // string - Nom avec index
-  "value_raw": 34021,          // number (0-4294967295) - Valeur brute
-  "value_db": 45.32,           // number|null - Valeur en dB (null si raw=0)
+  "name": "Trigger threshold 5", // string - Name with index
+  "value_raw": 34021,          // number (0-4294967295) - Raw value
+  "value_db": 45.32,           // number|null - Value in dB (null if raw=0)
   "timestamp": "2025-11-18T10:30:00.123456" // string (ISO 8601)
 }
 ```
 
-### 10. Seuils de maintien - `radar/{sn}/parameters/maintain_threshold/{0-15}`
-**Type :** Retain = True  
-**Fréquence :** Au démarrage et lors de modifications
+### 10. Maintain Thresholds - `radar/{sn}/parameters/maintain_threshold/{0-15}`
+**Type:** Retain = True  
+**Frequency:** At startup and on modifications
 
 ```json
 {
-  "name": "Seuil de maintien 12",     // string - Nom avec index
-  "value_raw": 28456,          // number (0-4294967295) - Valeur brute
-  "value_db": 44.54,           // number|null - Valeur en dB (null si raw=0)
+  "name": "Maintain threshold 12",     // string - Name with index
+  "value_raw": 28456,          // number (0-4294967295) - Raw value
+  "value_db": 44.54,           // number|null - Value in dB (null if raw=0)
   "timestamp": "2025-11-18T10:30:00.123456" // string (ISO 8601)
 }
 ```
 
-## Topics d'écoute (reçus par le service)
+## Subscribed Topics (received by the service)
 
-### 1. Redémarrage du module - `radar/{sn}/reboot`
-**Payload :** Ignoré (n'importe quel contenu)  
-**Action :** Redémarre complètement le module radar et réactive le mode debug
+### 1. Module Reboot - `radar/{sn}/reboot`
+**Payload:** Ignored (any content)  
+**Action:** Completely reboots the radar module and reactivates debug mode
 
-### 2. Modification des paramètres de distance/délai
-**Topics :**
+### 2. Modifying Distance/Delay Parameters
+**Topics:**
 - `radar/{sn}/parameters/set/min_detection_door`
 - `radar/{sn}/parameters/set/max_detection_door`
 - `radar/{sn}/parameters/set/delay_time`
 
-**Payload pour distances (0-15) :**
+**Payload for distances (0-15):**
 ```json
 {
-  "value": 5                   // number - Nouvelle valeur (0-15 pour portes)
+  "value": 5                   // number - New value (0-15 for gates)
 }
 ```
 
-**Payload pour délai (0-65535) :**
+**Payload for delay (0-65535):**
 ```json
 {
-  "value": 1000                // number - Nouvelle valeur en millisecondes
+  "value": 1000                // number - New value in milliseconds
 }
 ```
 
-### 3. Modification des seuils - `radar/{sn}/parameters/set/trigger_threshold/{0-15}`
-### 4. Modification des seuils - `radar/{sn}/parameters/set/maintain_threshold/{0-15}`
+### 3. Modifying Thresholds - `radar/{sn}/parameters/set/trigger_threshold/{0-15}`
+### 4. Modifying Thresholds - `radar/{sn}/parameters/set/maintain_threshold/{0-15}`
 
-**Payload option 1 (valeur brute) :**
+**Payload option 1 (raw value):**
 ```json
 {
-  "value_raw": 34021           // number (0-4294967295) - Valeur brute
+  "value_raw": 34021           // number (0-4294967295) - Raw value
 }
 ```
 
-**Payload option 2 (valeur en dB) :**
+**Payload option 2 (dB value):**
 ```json
 {
-  "value_db": 45.32            // number - Valeur en décibels (convertie automatiquement)
+  "value_db": 45.32            // number - Value in decibels (automatically converted)
 }
 ```
 
-## Formules de conversion
+## Conversion Formulas
 
-**Raw vers dB :** `dB = 10 * log10(raw)`  
-**dB vers Raw :** `raw = 10^(dB/10)`
+**Raw to dB:** `dB = 10 * log10(raw)`  
+**dB to Raw:** `raw = 10^(dB/10)`
 
-## Wildcard topics utiles
+## Useful Wildcard Topics
 
-- `radar/+/status` : Status de tous les modules
-- `radar/+/measurements/detection` : Détections de tous les modules  
-- `radar/+/parameters/trigger_threshold/+` : Tous les seuils de déclenchement
-- `radar/+/parameters/set/#` : Toutes les commandes de modification
+- `radar/+/status`: Status of all modules
+- `radar/+/measurements/detection`: Detections from all modules  
+- `radar/+/parameters/trigger_threshold/+`: All trigger thresholds
+- `radar/+/parameters/set/#`: All modification commands

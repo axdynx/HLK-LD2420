@@ -1,5 +1,5 @@
 [Unit]
-Description=Service MQTT Capteur Radar
+Description=MQTT Radar Sensor Service
 After=network.target
 
 [Service]
@@ -13,7 +13,7 @@ RestartSec=10
 StandardOutput=journal
 StandardError=journal
 
-# Variables d'environnement optionnelles
+# Optional environment variables
 Environment=PYTHONPATH=/opt/radar_service
 Environment=PORT=/dev/serial0
 Environment=MQTT_BROKER=localhost
@@ -24,7 +24,7 @@ Environment=BAUDRATE=115200
 Environment=RESTART_INTERVAL=30
 Environment=MQTT_TOPIC=radar/$sn
 
-# Permissions pour accès port série
+# Permissions for serial port access
 SupplementaryGroups=dialout
 
 [Install]

@@ -4,45 +4,46 @@ import math
 
 def parse_debug_frame(buffer):
     """
-    Parse une trame debug complète du buffer
+    Parse a complete debug frame from the buffer
     Format: Header (4) + Length (2) + Data (35) + Footer (4) = 45 bytes total
-    Retourne les données parsées ou None si pas de trame complète
+    Returns parsed data or None if no complete frame is available
     """
     header = bytes.fromhex('F4 F3 F2 F1')
     footer = bytes.fromhex('F8 F7 F6 F5')
     
+    # Find header position
     start = buffer.find(header)
     if start == -1:
         return None
     
-    # Vérifier qu'on a assez de données pour une trame complète (minimum)
+    # Check if we have enough data for a complete frame (minimum)
     if len(buffer) < start + 4 + 2 + 35 + 4:  # header + length + data + footer
         return None
     
-    # Lire le champ longueur (2 bytes après le header)
+    # Read length field (2 bytes after header)
     length_bytes = buffer[start + 4:start + 6]
     length = struct.unpack('<H', length_bytes)[0]
     
     if length != 35:
-        print(f"Debug: Longueur incorrecte: {length}, attendue: 35")
+        print(f"Debug: Incorrect length: {length}, expected: 35")
         return None
     
-    # Extraction des données (35 bytes après le champ longueur)
+    # Extract data (35 bytes after length field)
     payload_start = start + 6
     payload = buffer[payload_start:payload_start + 35]
     
-    # Vérifier le footer
+    # Verify footer
     footer_start = payload_start + 35
     if buffer[footer_start:footer_start + 4] != footer:
-        print(f"Debug: Footer incorrect à la position {footer_start}")
+        print(f"Debug: Incorrect footer at position {footer_start}")
         return None
     
     try:
-        # Décodage des données (format original)
+        # Decode data (original format)
         detection = payload[0]
         distance = struct.unpack('<H', payload[1:3])[0]
         
-        # Décodage des 16 valeurs énergétiques (32 octets, 2 bytes chacune)
+        # Decode the 16 energy values (32 bytes, 2 bytes each)
         energy_values = []
         energy_raw = []
         for i in range(16):
@@ -50,7 +51,7 @@ def parse_debug_frame(buffer):
             raw_value = struct.unpack('<H', payload[offset:offset + 2])[0]
             energy_raw.append(raw_value)
             if raw_value > 0:
-                db_value = 10 * math.log10(raw_value)  # Conversion en dB
+                db_value = 10 * math.log10(raw_value)  # Convert to dB
             else:
                 db_value = 0
             energy_values.append(db_value)
@@ -63,12 +64,12 @@ def parse_debug_frame(buffer):
         }
     
     except (struct.error, ValueError, IndexError) as e:
-        print(f"Debug: Erreur parsing: {e}")
+        print(f"Debug: Parsing error: {e}")
         return None
 
 def build_command(data_bytes: bytes) -> bytes:
     """
-    Structure une commande avec header, longueur, données, footer.
+    Structure a command with header, length, data, footer.
     """
     header = bytes.fromhex('FD FC FB FA')
     footer = bytes.fromhex('04 03 02 01')
@@ -77,16 +78,20 @@ def build_command(data_bytes: bytes) -> bytes:
     return header + length_bytes + data_bytes + footer
 
 def build_open_command_mode(version_bytes: bytes = b'\x01\x00') -> bytes:
-    # FF 00 + version (2 octets)
+    """Build command to open command mode with specified version"""
+    # FF 00 + version (2 bytes)
     return build_command(b'\xFF\x00' + version_bytes)
 
 def build_structured_message(data_bytes: bytes) -> bytes:
+    """Build a structured message with proper framing"""
     return build_command(data_bytes)
 
 def to_hex_str(data):
+    """Convert bytes to hexadecimal string representation"""
     return ' '.join(f'{b:02X}' for b in data)
 
 def wait_for_ack(ser, timeout=2.0) -> bytes:
+    """Wait for acknowledgment response from the serial device"""
     start = time.time()
     buffer = b''
     header = bytes.fromhex('FD FC FB FA')
@@ -104,13 +109,24 @@ def wait_for_ack(ser, timeout=2.0) -> bytes:
 
 def send_command_sequence(ser, command_name: str, command_data: bytes, command_ack: bytes, version: int = 1):
     """
-    Envoie la séquence : enable, commande, end, avec attente d'ACK à chaque étape.
+    Send command sequence: enable, command, end, waiting for ACK at each step.
+    
+    Args:
+        ser: Serial connection object
+        command_name: Human-readable name for logging
+        command_data: Command data bytes to send
+        command_ack: Expected acknowledgment bytes
+        version: Protocol version (default: 1)
+        
+    Returns:
+        Data payload from response if successful, False otherwise
     """
     is_reboot = command_data == build_command(bytes.fromhex('68 00'))
 
     version_bytes = version.to_bytes(2, byteorder='little')
 
-    enable_cmd = build_open_command_mode(version_bytes)  # Open command mode avec version paramétrable
+    # Command sequence
+    enable_cmd = build_open_command_mode(version_bytes)  # Open command mode with configurable version
     end_cmd = build_command(bytes.fromhex('FE 00'))  # Close command mode
 
     cmds = [enable_cmd, command_data, end_cmd]
@@ -123,6 +139,7 @@ def send_command_sequence(ser, command_name: str, command_data: bytes, command_a
     ]
 
     def extract_structured_message(data: bytes) -> bytes:
+        """Extract structured message from response data"""
         header = bytes.fromhex('FD FC FB FA')
         footer = bytes.fromhex('04 03 02 01')
         start = data.rfind(header)
@@ -134,6 +151,7 @@ def send_command_sequence(ser, command_name: str, command_data: bytes, command_a
             return b''
     
     def remove_data(data: bytes) -> bytes:
+        """Remove data payload from structured message for comparison"""
         header = bytes.fromhex('FD FC FB FA')
         footer = bytes.fromhex('04 03 02 01')
         start = data.rfind(header)
@@ -143,6 +161,7 @@ def send_command_sequence(ser, command_name: str, command_data: bytes, command_a
         return data
 
     def extract_data_if_applicable(resp: bytes):
+        """Extract data payload from response if present"""
         header = bytes.fromhex('FD FC FB FA')
         footer = bytes.fromhex('04 03 02 01')
         start = resp.rfind(header)
@@ -159,8 +178,9 @@ def send_command_sequence(ser, command_name: str, command_data: bytes, command_a
 
     data = None
 
+    # Execute command sequence
     for name, cmd, expected_ack in zip(names, cmds, expected_acks):
-        print(f"Envoi [{name}] : {to_hex_str(cmd)}")
+        print(f"Sending [{name}]: {to_hex_str(cmd)}")
         i = 0
         resp = None
         while resp == None and i < 3:
@@ -173,14 +193,14 @@ def send_command_sequence(ser, command_name: str, command_data: bytes, command_a
             i += 1
         
         if resp is None:
-            print(f"Erreur : pas d'acquittement reçu pour {name} après 3 tentatives.")
+            print(f"Error: No acknowledgment received for {name} after 3 attempts.")
             return False
         
         main_ack = extract_structured_message(resp)
         if main_ack == expected_ack or (name == command_name and remove_data(main_ack) == remove_data(expected_ack)):
-            print(f"Acquittement reçu pour [{name}] : {to_hex_str(main_ack)}")
+            print(f"Acknowledgment received for [{name}]: {to_hex_str(main_ack)}")
         else:
-            print(f"Erreur : acquittement inattendu après {name} ! Reçu : {to_hex_str(main_ack) if main_ack else to_hex_str(resp)}")
+            print(f"Error: Unexpected acknowledgment after {name}! Received: {to_hex_str(main_ack) if main_ack else to_hex_str(resp)}")
             return False
         if name == command_name:
             data = extract_data_if_applicable(resp)
@@ -188,7 +208,7 @@ def send_command_sequence(ser, command_name: str, command_data: bytes, command_a
     return data
 
 def activate_debug_mode(ser):
-    """Active le mode rapport/debug"""
+    """Activate report/debug mode"""
     import sys
     import os
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -198,7 +218,7 @@ def activate_debug_mode(ser):
     return send_command_sequence(ser, "activate debug mode", cmd, ack, version=1)
 
 def deactivate_debug_mode(ser):
-    """Désactive le mode rapport/debug"""
+    """Deactivate report/debug mode"""
     import sys
     import os
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

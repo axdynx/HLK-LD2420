@@ -4,31 +4,33 @@ import sys
 from mqtt_service import RadarMQTTService
 
 def signal_handler(signum, frame):
-    """Gestionnaire de signaux pour arrêt propre"""
-    print(f"\nSignal {signum} reçu, arrêt en cours...")
+    """Signal handler for clean shutdown"""
+    print(f"\nSignal {signum} received, shutting down...")
     if 'service' in globals():
         service.shutdown()
     sys.exit(0)
 
 def main():
-    parser = argparse.ArgumentParser(description='Service MQTT pour capteur radar')
-    parser.add_argument('port', help='Port série (ex: /dev/ttyUSB0)')
-    parser.add_argument('--baudrate', type=int, default=115200, help='Vitesse série (défaut: 115200)')
-    parser.add_argument('--mqtt-broker', default='localhost', help='Adresse broker MQTT (défaut: localhost)')
-    parser.add_argument('--mqtt-port', type=int, default=1883, help='Port broker MQTT (défaut: 1883)')
-    parser.add_argument('--mqtt-username', help='Nom d\'utilisateur MQTT (optionnel)')
-    parser.add_argument('--mqtt-password', help='Mot de passe MQTT (optionnel)')
-    parser.add_argument('--restart-interval', type=int, default=30, help='Intervalle de redémarrage auto en secondes (défaut: 30)')
-    parser.add_argument('--mqtt-topic', default='radar/$sn', help='Topic MQTT (défaut: radar/$sn)')
-    parser.add_argument('--mqtt-secure', type=bool, default=False, help='Mode MQTT/MQTTS')
+    """Main entry point for the radar MQTT service"""
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description='MQTT service for radar sensor')
+    parser.add_argument('port', help='Serial port (e.g., /dev/ttyUSB0)')
+    parser.add_argument('--baudrate', type=int, default=115200, help='Serial baudrate (default: 115200)')
+    parser.add_argument('--mqtt-broker', default='localhost', help='MQTT broker address (default: localhost)')
+    parser.add_argument('--mqtt-port', type=int, default=1883, help='MQTT broker port (default: 1883)')
+    parser.add_argument('--mqtt-username', help='MQTT username (optional)')
+    parser.add_argument('--mqtt-password', help='MQTT password (optional)')
+    parser.add_argument('--restart-interval', type=int, default=30, help='Auto-restart interval in seconds (default: 30)')
+    parser.add_argument('--mqtt-topic', default='radar/$sn', help='MQTT topic (default: radar/$sn)')
+    parser.add_argument('--mqtt-secure', type=bool, default=False, help='MQTT/MQTTS mode')
     
     args = parser.parse_args()
     
-    # Configuration des signaux pour arrêt propre
+    # Configure signal handlers for clean shutdown
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    # Créer et démarrer le service
+    # Create and start the service
     global service
     service = RadarMQTTService(
         serial_port=args.port,
@@ -42,6 +44,7 @@ def main():
 	mqtt_secure=args.mqtt_secure
     )
     
+    # Run the service and exit with appropriate status code
     success = service.run()
     sys.exit(0 if success else 1)
 
